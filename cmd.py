@@ -7,6 +7,8 @@ from pathlib import Path
 import datetime
 import pickle
 
+import json
+import os
 
 # from bpy.types import ( PropertyGroup , Panel , Operator ,UIList)
 # from bpy.props import ( FloatVectorProperty , )
@@ -14,8 +16,99 @@ import pickle
 from . import utils
 imp.reload(utils)
 
+ROOTPATH=[]
 
-MODE = ('svn','work','backup','onedrive')
+# json_path = r'E:\data\OneDrive\projects\_lib\Blender'
+
+#---------------------------------------------------------------------------------------
+#ルートパス
+#---------------------------------------------------------------------------------------
+def update_rootpath(self,context):
+
+    global ROOTPATH
+    ROOTPATH.clear()
+    #ROOTPATH.append(('ARMATURE','ARMATURE',''))
+
+    for i,item in enumerate(bpy.context.scene.cyascenemanager_proj):
+        #print(item.projectname)
+        ROOTPATH.append((str(i),item.projectname,''))
+
+    # prop=bpy.context.scene.cyascenemanager_oa
+    # print(prop.root_Path)
+
+    return ROOTPATH
+
+
+def reload_rootpath():
+    prop,ui_list,itemlist = getprop()
+    print(prop.root_Path)
+    index = int(prop.root_Path)
+    print(bpy.context.scene.cyascenemanager_proj[index].work_root)
+
+    work_root=bpy.context.scene.cyascenemanager_proj[index].work_root
+
+    prop.work_root=work_root
+    prop.backup_root=bpy.context.scene.cyascenemanager_proj[index].backup_root
+    prop.onedrive_root=bpy.context.scene.cyascenemanager_proj[index].onedrive_root
+
+    reload( work_root )
+
+
+def path_update(self,context):
+    print('aaa')
+    prop,ui_list,itemlist = getprop()
+    #prop = bpy.context.scene.cyascenemanager_oa
+
+    filepath =prop.current_dir
+    files = glob.glob( f"{filepath}/*" )
+    itemlist.clear()
+
+    if prop.sortmode == "time":
+        files.sort(key=os.path.getmtime)
+
+    files_sorted=[]
+
+    for file in files:
+        if os.path.isdir(file):
+            files_sorted.append(file)
+
+    for file in files:
+        if not os.path.isdir(file):
+            files_sorted.append(file)
+
+    for file in files_sorted:
+        path = Path(file)
+        #basename = os.path.basename(file)
+        item = itemlist.add()
+        item.name = path.name
+        suffix = path.suffix
+
+        #ファイルの日付
+        #t = path.stat().st_atime
+        #now = datetime.datetime.now()
+        dt = datetime.datetime.fromtimestamp(path.stat().st_atime)
+        #newfilename = f'{dt:%y%m%d_%H%M}'
+
+        item.date = f'{dt:%y/%m/%d %H:%M}'
+
+        if os.path.isdir(file):
+            item.filetype = 'dir'
+
+        else:
+            item.filetype = ''
+
+            for word in FILETYPE:
+                if suffix.lower() == word:
+                    item.filetype = FILETYPE[word]
+                    break
+
+        ui_list.active_index = len(itemlist) - 1
+
+    # reload( prop.current_dir )
+
+
+MODE = ('work','backup','onedrive')
+#MODE = ('svn','work','backup','onedrive')
 Is_Work = False
 
 def getprop():
@@ -119,6 +212,23 @@ def open_file_icon_clicked(filename,mode):
         bpy.ops.import_scene.obj(filepath=newpath,split_mode="OFF")# split_mode="OFF"<<vertex order変えない
 
 
+    if mode != 'blend':
+        selected = utils.selected()
+        utils.activeObj(selected[0])
+
+        s = prop.import_obj_scale
+
+        for ob in selected:
+            ob.scale.x = s
+            ob.scale.y = s
+            ob.scale.z = s
+
+            if prop.import_obj_apply:
+                bpy.ops.object.transform_apply(location=True, rotation=True, scale=True, properties=True)
+
+
+
+
 
 #【ファイル操作】：リストで選択したファイルを上書き保存 .blend拡張子を付加する
 def save_file():
@@ -128,6 +238,7 @@ def save_file():
 
     bpy.ops.wm.save_as_mainfile(filepath = str(newpath) ,copy = False )
 
+    reload( prop.current_dir )
 
 #【ファイル操作】：チェックついているファイルをコピー、もしくは移動
 def move(mode):
@@ -140,9 +251,9 @@ def move(mode):
     target = prop.copy_target
 
 
-    if target == 'svn':
-        root = prop.svn_root
-    elif target == 'work':
+    # if target == 'svn':
+    #     root = prop.svn_root
+    if target == 'work':
         root = prop.work_root
     elif target == 'backup':
         root = prop.backup_root
@@ -259,12 +370,41 @@ def load_textures():
 #
 #---------------------------------------------------------------------------------------
 
-def setproject():
+def setproject(mode):
     global Is_Work
     Is_Work = False#ワークフォルダかどうかチェック用
-
     prop = bpy.context.scene.cyascenemanager_oa
-    filepath = os.path.dirname( bpy.data.filepath )
+
+
+    #---------------------------------------------------------------------------------------
+    json_path = r'E:\data\OneDrive\projects\_lib\Blender\CyaFileBrowserData.json'
+
+    if os.path.exists( json_path ):
+        with open( json_path , 'r') as fp:
+            DATA = json.load(fp)
+
+    # global ROOTPATH
+    # ROOTPATH.clear()
+
+    bpy.context.scene.cyascenemanager_proj.clear()
+    for d in DATA:
+        print(d["projectname"])
+        newCustomItem = bpy.context.scene.cyascenemanager_proj.add()
+        newCustomItem.projectname = d["projectname"]
+        newCustomItem.work_root = d["work_root"]
+        newCustomItem.backup_root = d["backup_root"]
+        newCustomItem.onedrive_root = d["onedrive_root"]
+
+        #ROOTPATH.append((d["projectname"],d["projectname"],''))
+
+
+    #---------------------------------------------------------------------------------------
+
+
+    if mode == 0:
+        filepath = prop.current_dir
+    elif mode == 1:
+        filepath = os.path.dirname( bpy.data.filepath )
 
     #パスが空の場合は保存してあったパスを読み込む
     if filepath =='':
@@ -274,7 +414,8 @@ def setproject():
 
 
     #ルート以下の相対パスを抽出
-    for root,mode in zip(( prop.svn_root , prop.work_root , prop.backup_root , prop.onedrive_root ) , MODE ):
+    for root,mode in zip(( prop.work_root , prop.backup_root , prop.onedrive_root ) , MODE ):
+    #for root,mode in zip(( prop.svn_root , prop.work_root , prop.backup_root , prop.onedrive_root ) , MODE ):
 
         if filepath.find( root ) != -1:
             rel_dir = filepath.replace( root , '' )
@@ -285,7 +426,7 @@ def setproject():
 
 
     if rel_dir != '':
-        prop.svn_dir = prop.svn_root + rel_dir
+        #prop.svn_dir = prop.svn_root + rel_dir
         prop.work_dir = prop.work_root + rel_dir
         prop.backup_dir = prop.backup_root + rel_dir
         prop.onedrive_dir = prop.onedrive_root + rel_dir
@@ -307,6 +448,8 @@ FILETYPE = {
 #リストにカレントファルダのファイルを追加
 def reload(filepath):
     global Is_Work
+    global ROOTPATH
+    ROOTPATH.clear()
 
     prop = bpy.context.scene.cyascenemanager_oa
     ui_list = bpy.context.window_manager.cyascenemanager_list
@@ -367,6 +510,9 @@ def reload(filepath):
 
         ui_list.active_index = len(itemlist) - 1
 
+
+
+
     save_sceneManagerData([filepath])
 
 
@@ -378,14 +524,14 @@ def switch_path(self, context):
     #switch_work()
     prop = bpy.context.scene.cyascenemanager_oa
 
-    if mode == 'svn':
-        path = Path(prop.svn_root) / Path(prop.relative_path)
-        reload(str(path))
+    # if mode == 'svn':
+    #     path = Path(prop.svn_root) / Path(prop.relative_path)
+    #     reload(str(path))
 
-        #reload(prop.svn_dir)
-        prop.current_root = prop.svn_root
+    #     #reload(prop.svn_dir)
+    #     prop.current_root = prop.svn_root
 
-    elif mode == 'work':
+    if mode == 'work':
         path = Path(prop.work_root) / Path(prop.relative_path)
         reload(str(path))
 
@@ -453,8 +599,15 @@ def go_up_dir():
     path = Path(prop.current_dir)#この段階で最下層のディレクトリは除外される（最下層がファイルとみなされるので）
 
     if prop.relative_path != '.':#ルート以上に上がってしまった場合はrel_pathを更新しない
-        rel_path = Path(prop.relative_path)
-        prop.relative_path =str(rel_path.parents[0])
+
+
+        if prop.relative_path != '':
+        #print("prop.relative_path>",prop.relative_path)
+            rel_path = Path(prop.relative_path)
+            prop.relative_path =str(rel_path.parents[0])
+        else:
+            rel_path = Path(prop.current_dir)
+            prop.relative_path = str(rel_path.parents[0])
 
     prop.current_dir = str(path.parents[0])
     reload( prop.current_dir )
@@ -483,4 +636,3 @@ def sort_file(mode):
     prop.sortmode = mode
 
     reload( prop.current_dir )
-
