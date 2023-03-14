@@ -40,8 +40,6 @@ def update_rootpath(self,context):
 
 
 def reload_rootpath():
-
-
     #---------------------------------------------------------------------------------------
     json_path = r'E:\data\OneDrive\projects\_lib\Blender\CyaFileBrowserData.json'
 
@@ -151,7 +149,9 @@ def getprop():
 #パスの状態を読み込む
 def load_sceneManagerData():
     prop,ui_list,itemlist = getprop()
-    filename = os.path.join(os.path.join(os.environ['USERPROFILE']), r'Documents\Cyatools\sceneManagerPath.pkl')
+    fname = r'Documents\Cyatools\sceneManagerPath'+bpy.app.version_string+'.pkl'
+
+    filename = os.path.join(os.path.join(os.environ['USERPROFILE']), fname)
 
     if os.path.exists(filename):
         f = open(  filename  ,'rb')
@@ -162,7 +162,8 @@ def load_sceneManagerData():
 
 
 def save_sceneManagerData(data):
-    filename = os.path.join(os.path.join(os.environ['USERPROFILE']), r'Documents\Cyatools\sceneManagerPath.pkl')
+    fname = r'Documents\Cyatools\sceneManagerPath'+bpy.app.version_string+'.pkl'
+    filename = os.path.join(os.path.join(os.environ['USERPROFILE']), fname)
     f = open( filename, 'wb' )
     pickle.dump( data, f ,protocol=0)
     f.close()
@@ -247,7 +248,7 @@ def open_file_icon_clicked(filename,mode):
 
     elif mode == 'fbx':
 
-        if len(filearray) == []:
+        if len(filearray) == 0:
             bpy.ops.import_scene.fbx(filepath=newpath)
         else:
             for filename in filearray:

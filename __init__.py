@@ -49,10 +49,10 @@ from bpy.props import(
     )
 
 from . import utils
-from . import cmd
+from . import cmd_
 
 imp.reload(utils)
-imp.reload(cmd)
+imp.reload(cmd_)
 
 
 #---------------------------------------------------------------------------------------
@@ -61,7 +61,7 @@ imp.reload(cmd)
 @persistent
 def cyascenemanager_handler(dummy):
 
-    cmd.setproject(1)
+    cmd_.setproject(1)
 
 
 #---------------------------------------------------------------------------------------
@@ -69,10 +69,10 @@ def cyascenemanager_handler(dummy):
 #---------------------------------------------------------------------------------------
 class CYASCENEMANAGER_Props_OA(PropertyGroup):
     copy_target : EnumProperty(items= (('work', '', '','EVENT_W',1),('backup', '', '','EVENT_B',2),('onedrive', '', '','EVENT_O',3)  ))
-    switch_path : EnumProperty(items= (('work', '', '','EVENT_W',1),('backup', '', '','EVENT_B',2),('onedrive', '', '','EVENT_O',3)),update = cmd.switch_path)
+    switch_path : EnumProperty(items= (('work', '', '','EVENT_W',1),('backup', '', '','EVENT_B',2),('onedrive', '', '','EVENT_O',3)),update = cmd_.switch_path)
 
     # copy_target : EnumProperty(items= (('svn', '', '','EVENT_S',0),('work', '', '','EVENT_W',1),('backup', '', '','EVENT_B',2),('onedrive', '', '','EVENT_O',3)  ))
-    # switch_path : EnumProperty(items= (('svn', '', '','EVENT_S',0),('work', '', '','EVENT_W',1),('backup', '', '','EVENT_B',2),('onedrive', '', '','EVENT_O',3)),update = cmd.switch_path)
+    # switch_path : EnumProperty(items= (('svn', '', '','EVENT_S',0),('work', '', '','EVENT_W',1),('backup', '', '','EVENT_B',2),('onedrive', '', '','EVENT_O',3)),update = cmd_.switch_path)
 
 
     #svn_root : StringProperty(name="svn root",  default=r'D:\Prj\B01\Assets' )
@@ -92,12 +92,12 @@ class CYASCENEMANAGER_Props_OA(PropertyGroup):
 
 
     #UI用プロパティ
-    current_dir : StringProperty(name = "" , update = cmd.path_update)
+    current_dir : StringProperty(name = "" , update = cmd_.path_update)
     selected_file : StringProperty(name = "")
     add_work : BoolProperty(default=False)
 
     sortmode : StringProperty()
-    root_Path : EnumProperty(items = cmd.update_rootpath , name = '')
+    root_Path : EnumProperty(items = cmd_.update_rootpath , name = '')
 
     #Option
     import_obj_scale : FloatProperty(default=1.0 , name = 'import scale')
@@ -188,10 +188,10 @@ class CYASCENEMANAGER_PT_scenemanager(utils.panel):
         box = col.box()
         row = box.row()
         row.operator("cyascenemanager.go_up_dir", text = '' , icon= 'FILE_PARENT')
-        row.operator("cyascenemanager.open_file", icon = 'FILE')
+        #row.operator("cyascenemanager.open_file", icon = 'FILE')
         row.operator("cyascenemanager.open_explorer", text = '' , icon= 'FILE_FOLDER')
         row.operator("cyascenemanager.reload" , icon  ='FILE_REFRESH' ).mode=0
-        row.operator("cyascenemanager.reload" , icon  ='HOME' ).mode=1
+        row.operator("cyascenemanager.reload" , icon  ='FILE_TICK' ).mode=1
 
         row.prop(prop,"switch_path", expand=True)
         row.operator("cyascenemanager.copytools", icon='COPYDOWN')
@@ -233,7 +233,7 @@ bpy.utils.register_class(CYASCENEMANAGER_Props_item)
 
 #---------------------------------------------------------------------------------------
 class CYASCENEMANAGER_Props_list(PropertyGroup):
-    active_index : IntProperty( update = cmd.selection_changed )
+    active_index : IntProperty( update = cmd_.selection_changed )
     itemlist : CollectionProperty(type=CYASCENEMANAGER_Props_item)#アイテムプロパティの型を収めることができるリストを生成
 
 
@@ -270,7 +270,7 @@ class CYASCENEMANAGER_MT_copytools(Operator):
         row.operator("cyascenemanager.load_textures" )
 
         row.prop(prop,"add_work" )
-        row.operator("cyascenemanager.apply", icon='EVENT_A')
+        #row.operator("cyascenemanager.apply", icon='EVENT_A')
 
 
         box = layout.box()
@@ -312,15 +312,15 @@ class CYASCENEMANAGER_MT_fileopen(Operator):
     def execute(self, context):
         if self.confirm == 'Yes':
             if self.mode == 'blend':
-                cmd.open_file_icon_clicked(self.filename,self.mode)
+                cmd_.open_file_icon_clicked(self.filename,self.mode)
 
             if self.mode == 'fbx':
                 print('fbx')
-                cmd.open_file_icon_clicked(self.filename,self.mode)
+                cmd_.open_file_icon_clicked(self.filename,self.mode)
 
             if self.mode == 'obj':
                 print('obj')
-                cmd.open_file_icon_clicked(self.filename,self.mode)
+                cmd_.open_file_icon_clicked(self.filename,self.mode)
 
 
         return{'FINISHED'}
@@ -347,7 +347,7 @@ class CYASCENEMANAGER_OT_save_as_work(Operator):
     bl_label = ""
 
     def execute(self, context):
-        cmd.save_backup()
+        cmd_.save_backup()
         return {'FINISHED'}
 
 class CYASCENEMANAGER_OT_load_textures(Operator):
@@ -355,7 +355,7 @@ class CYASCENEMANAGER_OT_load_textures(Operator):
     bl_label = "load_textures"
     def execute(self, context):
         print("sssss")
-        cmd.load_textures()
+        cmd_.load_textures()
         return {'FINISHED'}
 
 class CYASCENEMANAGER_OT_move(Operator):
@@ -364,7 +364,7 @@ class CYASCENEMANAGER_OT_move(Operator):
     mode : StringProperty()
 
     def execute(self, context):
-        cmd.move(self.mode)
+        cmd_.move(self.mode)
         return {'FINISHED'}
 
 class CYASCENEMANAGER_OT_open_file(Operator):
@@ -372,7 +372,7 @@ class CYASCENEMANAGER_OT_open_file(Operator):
     bl_label = ""
 
     def execute(self, context):
-        cmd.open_file()
+        cmd_.open_file()
         return {'FINISHED'}
 
 class CYASCENEMANAGER_OT_save_file(Operator):
@@ -380,7 +380,7 @@ class CYASCENEMANAGER_OT_save_file(Operator):
     bl_label = ""
 
     def execute(self, context):
-        cmd.save_file()
+        cmd_.save_file()
         return {'FINISHED'}
 
 #---------------------------------------------------------------------------------------
@@ -396,7 +396,7 @@ class CYASCENEMANAGER_OT_reload(Operator):
     mode : IntProperty()
 
     def execute(self, context):
-        cmd.setproject(self.mode)
+        cmd_.setproject(self.mode)
         return {'FINISHED'}
 
 
@@ -406,7 +406,7 @@ class CYASCENEMANAGER_OT_go_up_dir(Operator):
     bl_label = ""
 
     def execute(self, context):
-        cmd.go_up_dir()
+        cmd_.go_up_dir()
         return {'FINISHED'}
 
 
@@ -420,7 +420,7 @@ class CYASCENEMANAGER_OT_select_icon(Operator):
     def execute(self, context):
 
         if self.mode == 'dir':
-            cmd.select_icon(self.mode,self.name)
+            cmd_.select_icon(self.mode,self.name)
 
         elif self.mode == 'blend':
             msg = 'Blendファイルを開きます(escでキャンセル)'
@@ -459,7 +459,7 @@ class CYASCENEMANAGER_OT_reload_rootpath(Operator):
     bl_label = ""
 
     def execute(self, context):
-        cmd.reload_rootpath()
+        cmd_.reload_rootpath()
         return {'FINISHED'}
 
 
@@ -476,7 +476,7 @@ class CYASCENEMANAGER_OT_sort_file(Operator):
 
 
     def execute(self, context):
-        cmd.sort_file(self.mode)
+        cmd_.sort_file(self.mode)
         return {'FINISHED'}
 
 
@@ -543,6 +543,7 @@ def register():
     bpy.types.WindowManager.cyascenemanager_list = PointerProperty(type=CYASCENEMANAGER_Props_list)
 
     bpy.app.handlers.load_post.append(cyascenemanager_handler)
+    #bpy.app.handlers.load_factory_startup_post.append(cyascenemanager_handler)
     #bpy.app.handlers.save_post.append(cyascenemanager_handler)
 
 
@@ -575,6 +576,7 @@ def unregister():
     del bpy.types.Scene.cyascenemanager_proj
 
     bpy.app.handlers.load_post.remove(cyascenemanager_handler)
+    #bpy.app.handlers.load_factory_startup_post.remove(cyascenemanager_handler)
     #bpy.app.handlers.save_post.remove(cyascenemanager_handler)
 
 
